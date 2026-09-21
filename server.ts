@@ -17,7 +17,40 @@ function getGeminiClient(): GoogleGenAI {
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is not configured');
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+}
+
+// Resilient helper to generate JSON content with primary gemini-3.6-flash and automatic fallback
+async function generateJsonContent(prompt: string, preferredModel: string = 'gemini-3.6-flash') {
+  const ai = getGeminiClient();
+  const modelsToTry = [preferredModel, 'gemini-3.8-flash'].filter((m, idx, arr) => arr.indexOf(m) === idx);
+  let lastError: any = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err?.message || String(err);
+      console.warn(`Gemini generation with ${model} failed (${errMsg}). Trying fallback if available...`);
+    }
+  }
+
+  throw lastError || new Error('Failed to generate content with Gemini models');
 }
 
 // Security: Validate external URLs to prevent SSRF (Server-Side Request Forgery)
@@ -237,7 +270,6 @@ app.post('/api/extract-job', async (req, res) => {
     }
 
     // Call Gemini to parse and extract structured job requirements
-    const ai = getGeminiClient();
     const safeUrlStr = typeof url === 'string' ? url.slice(0, 500) : 'N/A';
     const safePageText = pageText.slice(0, 14000);
 
@@ -263,13 +295,7 @@ Extract and return valid JSON with:
   "rawDescription": "Clean, readable markdown excerpt of the job responsibilities and requirements (500-1500 words)"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+    const response = await generateJsonContent(prompt);
 
     const contentText = response.text?.trim() || '{}';
     const parsedData = JSON.parse(contentText);
@@ -330,8 +356,6 @@ app.post('/api/tailor-resume', async (req, res) => {
       });
     }
 
-    const ai = getGeminiClient();
-
     const prompt = `You are a world-class executive resume strategist and Applicant Tracking System (ATS) expert.
 A job candidate wants to tailor their existing base resume specifically for a job they are applying to.
 
@@ -374,13 +398,7 @@ Return a valid JSON object matching this schema:
   "tailoredResumeMarkdown": "Full complete markdown of the newly tailored resume"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+    const response = await generateJsonContent(prompt);
 
     const text = response.text?.trim() || '{}';
     const resultData = JSON.parse(text);
@@ -438,8 +456,6 @@ app.post('/api/generate-followup-email', async (req, res) => {
       ? otherRolesAtCompany.slice(0, 5).map((r: any) => String(r).slice(0, 100))
       : [];
 
-    const ai = getGeminiClient();
-
     const prompt = `You are an elite career strategist and executive communications coach.
 A job candidate needs a highly personalized, human-sounding follow-up email for a specific job they applied for.
 
@@ -485,13 +501,7 @@ Generate a JSON object matching this schema:
   "highlightedRequirements": ["Requirement 1 used", "Requirement 2 used"]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+    const response = await generateJsonContent(prompt);
 
     const text = response.text?.trim() || '{}';
     const resultData = JSON.parse(text);

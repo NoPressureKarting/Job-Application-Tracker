@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import {
-  Briefcase,
   LayoutGrid,
   Kanban,
   Table,
@@ -23,6 +22,7 @@ import {
 import { ViewMode } from '../types';
 import { useTheme } from '../context/ThemeContext';
 import { AuthStatusBadge } from './AuthStatusBadge';
+import { AppLogo } from './AppLogo';
 
 interface NavbarProps {
   viewMode: ViewMode;
@@ -78,9 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Brand Logo & Name */}
           <div className="flex items-center gap-3 min-w-max">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Briefcase className="w-5 h-5 text-white" />
-            </div>
+            <AppLogo className="w-10 h-10 rounded-xl shadow-lg shadow-indigo-500/25 hover:scale-105 transition-transform duration-200 cursor-pointer" />
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-lg text-slate-900 dark:text-slate-100 tracking-tight">
