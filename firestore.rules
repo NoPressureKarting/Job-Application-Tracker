@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny Catch-All: Deny all unconfigured paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Security Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Blueprint for Job Applications
+    function isValidJobApplication(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+        data.company is string && data.company.size() > 0 && data.company.size() <= 300 &&
+        data.role is string && data.role.size() > 0 && data.role.size() <= 300 &&
+        data.status is string && data.status.size() <= 100 &&
+        data.appliedDate is string && data.appliedDate.size() <= 50 &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 300)) &&
+        (!('workplaceType' in data) || (data.workplaceType is string && data.workplaceType.size() <= 100)) &&
+        (!('employmentType' in data) || (data.employmentType is string && data.employmentType.size() <= 100)) &&
+        (!('salary' in data) || (data.salary is string && data.salary.size() <= 200)) &&
+        (!('salaryRange' in data) || (data.salaryRange is string && data.salaryRange.size() <= 200)) &&
+        (!('offerDetails' in data) || (data.offerDetails is string && data.offerDetails.size() <= 5000)) &&
+        (!('jobUrl' in data) || (data.jobUrl is string && data.jobUrl.size() <= 2048)) &&
+        (!('jobDescription' in data) || (data.jobDescription is string && data.jobDescription.size() <= 50000)) &&
+        (!('contactName' in data) || (data.contactName is string && data.contactName.size() <= 300)) &&
+        (!('contactEmail' in data) || (data.contactEmail is string && data.contactEmail.size() <= 300)) &&
+        (!('contactRole' in data) || (data.contactRole is string && data.contactRole.size() <= 300)) &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 50000)) &&
+        (!('resumeVersion' in data) || (data.resumeVersion is string && data.resumeVersion.size() <= 200)) &&
+        (!('tailoredResumeId' in data) || (data.tailoredResumeId is string && data.tailoredResumeId.size() <= 128)) &&
+        (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 100)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 100)) &&
+        (!('reminders' in data) || (data.reminders is list && data.reminders.size() <= 100)) &&
+        (!('interviews' in data) || (data.interviews is list && data.interviews.size() <= 50));
+    }
+
+    // Validation Blueprint for Saved Resumes (PII Protection)
+    function isValidResume(data) {
+      return data.userId is string && data.userId.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 300 &&
+        data.textContent is string && data.textContent.size() > 0 && data.textContent.size() <= 300000 &&
+        (!('uploadedAt' in data) || (data.uploadedAt is string && data.uploadedAt.size() <= 100)) &&
+        (!('fileSizeFormatted' in data) || (data.fileSizeFormatted is string && data.fileSizeFormatted.size() <= 50)) &&
+        (!('isDefault' in data) || data.isDefault is bool) &&
+        (!('isTailored' in data) || data.isTailored is bool);
+    }
+
+    // Job Applications collection rules
+    match /jobApplications/{docId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(docId) &&
+        isValidJobApplication(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(docId) &&
+        isValidJobApplication(incoming()) &&
+        incoming().userId == resource.data.userId &&
+        resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(docId) &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Resumes collection rules (Private candidate career documents)
+    match /resumes/{docId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(docId) &&
+        isValidResume(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(docId) &&
+        isValidResume(incoming()) &&
+        incoming().userId == resource.data.userId &&
+        resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(docId) &&
+        resource.data.userId == request.auth.uid;
+    }
+  }
+}

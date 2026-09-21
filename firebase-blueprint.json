@@ -1,0 +1,136 @@
+{
+  "entities": {
+    "jobApplications": {
+      "title": "Job Application",
+      "description": "Job application records belonging to individual users",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth user ID of the owner"
+        },
+        "company": {
+          "type": "string",
+          "description": "Company name"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role or position title"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current application status"
+        },
+        "location": {
+          "type": "string",
+          "description": "Job location"
+        },
+        "workplaceType": {
+          "type": "string",
+          "description": "Remote, Hybrid, or On-site"
+        },
+        "employmentType": {
+          "type": "string",
+          "description": "Employment type"
+        },
+        "salary": {
+          "type": "string",
+          "description": "Salary or compensation"
+        },
+        "salaryRange": {
+          "type": "string",
+          "description": "Salary range details"
+        },
+        "jobUrl": {
+          "type": "string",
+          "description": "Link to job posting"
+        },
+        "appliedDate": {
+          "type": "string",
+          "description": "Date applied"
+        },
+        "updatedDate": {
+          "type": "string",
+          "description": "Last updated date"
+        },
+        "contactName": {
+          "type": "string",
+          "description": "Recruiter or contact person"
+        },
+        "contactRole": {
+          "type": "string",
+          "description": "Contact role"
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Contact email address"
+        },
+        "notes": {
+          "type": "string",
+          "description": "User notes and research"
+        },
+        "resumeVersion": {
+          "type": "string",
+          "description": "Selected resume version"
+        },
+        "reminders": {
+          "type": "list",
+          "description": "Follow-up reminders"
+        },
+        "interviews": {
+          "type": "list",
+          "description": "Interview schedule rounds"
+        },
+        "tags": {
+          "type": "list",
+          "description": "Categorization tags"
+        }
+      },
+      "required": ["userId", "company", "role", "status", "appliedDate"],
+      "accessRules": {
+        "read": "request.auth != null && request.auth.uid == resource.data.userId",
+        "create": "request.auth != null && request.auth.uid == request.resource.data.userId",
+        "update": "request.auth != null && request.auth.uid == resource.data.userId",
+        "delete": "request.auth != null && request.auth.uid == resource.data.userId"
+      }
+    },
+    "resumes": {
+      "title": "Saved Resume",
+      "description": "Candidate resumes stored for AI prep and matching",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth user ID of the owner"
+        },
+        "name": {
+          "type": "string",
+          "description": "Resume file name or label"
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Upload timestamp string"
+        },
+        "textContent": {
+          "type": "string",
+          "description": "Extracted text content"
+        },
+        "fileSizeFormatted": {
+          "type": "string",
+          "description": "Human readable file size"
+        },
+        "isDefault": {
+          "type": "boolean",
+          "description": "Whether this is the primary default resume"
+        }
+      },
+      "required": ["userId", "name", "textContent"],
+      "accessRules": {
+        "read": "request.auth != null && request.auth.uid == resource.data.userId",
+        "create": "request.auth != null && request.auth.uid == request.resource.data.userId",
+        "update": "request.auth != null && request.auth.uid == resource.data.userId",
+        "delete": "request.auth != null && request.auth.uid == resource.data.userId"
+      }
+    }
+  }
+}
